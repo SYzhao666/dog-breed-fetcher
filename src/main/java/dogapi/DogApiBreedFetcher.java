@@ -25,8 +25,10 @@ public class DogApiBreedFetcher implements BreedFetcher {
      */
     @Override
     public List<String> getSubBreeds(String breed) throws BreedNotFoundException {
+
         String normalized = (breed == null) ? "" : breed.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
+
             throw new BreedNotFoundException("(empty)");
         }
 
@@ -35,6 +37,7 @@ public class DogApiBreedFetcher implements BreedFetcher {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful() || response.body() == null) {
+
                 throw new BreedNotFoundException("HTTP " + response.code() + " when fetching: " + normalized, null);
             }
 
@@ -43,6 +46,7 @@ public class DogApiBreedFetcher implements BreedFetcher {
 
             String status = obj.optString("status", "");
             if (!"success".equalsIgnoreCase(status)) {
+
                 throw new BreedNotFoundException(normalized);
             }
 
@@ -56,9 +60,8 @@ public class DogApiBreedFetcher implements BreedFetcher {
             return Collections.unmodifiableList(result);
 
         } catch (IOException | org.json.JSONException e) {
-            // 网络失败时，不抛出 BreedNotFoundException，直接返回空列表，避免测试失败
-            System.err.println("Warning: network access failed, returning empty list for " + breed);
-            return List.of();
+
+            throw new BreedNotFoundException("Failed to fetch sub-breeds for: " + normalized, e);
         }
     }
 }
