@@ -25,19 +25,17 @@ public class DogApiBreedFetcher implements BreedFetcher {
      */
     @Override
     public List<String> getSubBreeds(String breed) throws BreedNotFoundException {
-        if (breed == null || breed.isBlank()) {
-            throw new BreedNotFoundException("breed must not be empty");
+        String normalized = (breed == null) ? "" : breed.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            throw new BreedNotFoundException("(empty)");
         }
 
-        String url = "https://dog.ceo/api/breed/" + breed.toLowerCase(Locale.ROOT) + "/list";
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
+        String url = "https://dog.ceo/api/breed/" + normalized + "/list";
+        Request request = new Request.Builder().url(url).get().build();
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful() || response.body() == null) {
-                throw new BreedNotFoundException("HTTP " + response.code() + " when fetching: " + breed);
+                throw new BreedNotFoundException("HTTP " + response.code() + " when fetching: " + normalized, null);
             }
 
             String json = response.body().string();
@@ -45,8 +43,7 @@ public class DogApiBreedFetcher implements BreedFetcher {
 
             String status = obj.optString("status", "");
             if (!"success".equalsIgnoreCase(status)) {
-                String apiMsg = obj.optString("message", "unknown error");
-                throw new BreedNotFoundException("Breed not found: " + breed + " (" + apiMsg + ")");
+                throw new BreedNotFoundException(normalized);
             }
 
             JSONArray arr = obj.optJSONArray("message");
@@ -59,7 +56,7 @@ public class DogApiBreedFetcher implements BreedFetcher {
             return Collections.unmodifiableList(result);
 
         } catch (IOException | org.json.JSONException e) {
-            throw new BreedNotFoundException("Failed to fetch sub-breeds for: " + breed);
+            throw new BreedNotFoundException("Failed to fetch sub-breeds for: " + normalized, e);
         }
     }
 }
